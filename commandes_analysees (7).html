@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Commandes Analysées — Récapitulatif Mensuel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --graphite:#1F2933; --graphite-2:#2C3844; --concrete:#EDEAE3; --concrete-2:#F7F5F0; --paper:#FFFFFF;
+    --line:#DAD5C9; --ink:#232323; --ink-soft:#5B6570;
+    --amber:#E8A33D; --moss:#4B7B4E; --moss-soft:#E3EEE1; --slate-red:#A64B4B; --slate-red-soft:#F1E1E1;
+    --violet:#7A6BB0; --violet-soft:#EAE7F5;
+    --shadow: 0 1px 2px rgba(31,41,51,0.06), 0 4px 12px rgba(31,41,51,0.06);
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--concrete);color:var(--ink);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,.disp{font-family:'Oswald',sans-serif;text-transform:uppercase;letter-spacing:.03em;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+
+  header{background:var(--graphite);color:#F2F0EA;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px;border-bottom:4px solid var(--violet);}
+  header .brand{display:flex;align-items:center;gap:14px;}
+  header .brand .mark{width:38px;height:38px;border-radius:3px;background:repeating-linear-gradient(135deg, var(--violet) 0 4px, var(--graphite-2) 4px 8px);flex-shrink:0;}
+  header h1{font-size:20px;margin:0;font-weight:600;color:#fff;}
+  header .sub{font-size:11px;color:#B9C2CC;font-family:'IBM Plex Mono',monospace;text-transform:none;letter-spacing:.02em;margin-top:2px;}
+  .icon-btn{width:36px;height:36px;border-radius:4px;border:1px solid rgba(255,255,255,.24);background:transparent;color:#F2F0EA;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;}
+
+  main{max-width:1000px;margin:0 auto;padding:24px 20px 80px;}
+
+  .totals-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+  .totals-strip .card{background:var(--paper);border:1px solid var(--line);border-radius:6px;padding:14px 16px;box-shadow:var(--shadow);}
+  .totals-strip .card .label{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;}
+  .totals-strip .card .value{font-size:22px;font-weight:700;margin-top:4px;font-family:'Oswald',sans-serif;}
+
+  .month-block{background:var(--paper);border:1px solid var(--line);border-radius:8px;margin-bottom:20px;overflow:hidden;box-shadow:var(--shadow);}
+  .month-head{background:var(--graphite-2);color:#fff;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+  .month-head .month-title{font-size:16px;margin:0;}
+  .month-head .month-figures{display:flex;gap:20px;font-family:'IBM Plex Mono',monospace;font-size:12.5px;}
+  .month-head .month-figures b{font-size:14px;color:var(--amber);}
+  table{width:100%;border-collapse:collapse;}
+  thead th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);padding:10px 16px;border-bottom:1px solid var(--line);background:var(--concrete-2);}
+  tbody td{padding:10px 16px;border-bottom:1px solid var(--line);font-size:13.5px;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:var(--concrete-2);}
+  .num{font-family:'IBM Plex Mono',monospace;text-align:right;white-space:nowrap;}
+
+  .aug-sep-table{background:var(--paper);border:1px solid var(--line);border-radius:8px;margin-bottom:24px;overflow:hidden;box-shadow:var(--shadow);}
+  .aug-sep-table table{width:100%;border-collapse:collapse;}
+  .aug-sep-table thead th{background:var(--graphite-2);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:12px 18px;text-align:left;}
+  .aug-sep-table thead th:first-child{width:220px;}
+  .aug-sep-table tbody td{padding:12px 18px;border-bottom:1px solid var(--line);font-size:14px;}
+  .aug-sep-table tbody tr:last-child td{border-bottom:none;}
+  .aug-sep-table tbody td:first-child{font-family:'IBM Plex Mono',monospace;font-size:11.5px;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.02em;}
+  .aug-sep-table .cell-value{font-family:'IBM Plex Mono',monospace;font-weight:600;}
+  .aug-sep-table input.row2-input{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:13px;background:var(--concrete-2);color:var(--ink);}
+  .aug-sep-table input.row2-label{width:100%;padding:7px 9px;border:1px solid var(--line);border-radius:4px;font-family:'Inter',sans-serif;font-size:13px;background:var(--concrete-2);color:var(--ink-soft);font-style:italic;}
+  .empty-state{text-align:center;color:var(--ink-soft);padding:60px 20px;font-size:14px;}
+  .btn-clear-row{background:none;border:1px solid var(--slate-red);color:var(--slate-red);border-radius:4px;width:26px;height:26px;cursor:pointer;font-size:13px;line-height:1;}
+  .btn-clear-row:hover{background:var(--slate-red-soft);}
+  .btn-toggle-articles{background:none;border:1px solid var(--line);color:var(--ink-soft);border-radius:4px;width:26px;height:26px;cursor:pointer;font-size:12px;}
+  .btn-toggle-articles:hover{background:var(--concrete-2);}
+  .articles-row td{padding:0 !important;border-bottom:1px solid var(--line);}
+  .articles-panel{background:var(--concrete-2);padding:10px 18px;}
+  .articles-panel table{width:100%;border-collapse:collapse;}
+  .articles-panel th{text-align:left;font-family:'IBM Plex Mono',monospace;font-size:10px;text-transform:uppercase;color:var(--ink-soft);padding:6px 10px;}
+  .articles-panel td{padding:6px 10px;font-size:13px;border-bottom:1px solid var(--line);}
+  .articles-panel tr:last-child td{border-bottom:none;}
+  .articles-panel .reconciled{color:var(--moss);}
+  .btn-add-article{margin-top:8px;font-size:12px;padding:6px 12px;border-radius:4px;border:1px dashed var(--line);background:var(--paper);color:var(--ink-soft);cursor:pointer;}
+  .loading-veil{position:fixed;inset:0;background:rgba(237,234,227,.85);display:none;align-items:center;justify-content:center;z-index:70;font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-soft);}
+  .loading-veil.show{display:flex;}
+
+  .overlay{position:fixed;inset:0;background:rgba(31,41,51,.55);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .overlay.open{display:flex;}
+  .modal{background:var(--paper);width:100%;max-width:460px;border-radius:8px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3);padding:20px;}
+  .modal h2{margin:0 0 14px;font-size:16px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin-bottom:5px;font-family:'IBM Plex Mono',monospace;}
+  .field input{width:100%;padding:9px 11px;border:1px solid var(--line);border-radius:4px;font-size:14px;font-family:'Inter',sans-serif;background:var(--concrete-2);color:var(--ink);}
+  .hint{font-size:11.5px;color:var(--ink-soft);line-height:1.5;}
+  .btn{font-family:'Inter',sans-serif;font-weight:600;font-size:13px;padding:9px 16px;border-radius:4px;border:none;cursor:pointer;background:var(--amber);color:#241a05;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="mark"></div>
+    <div>
+      <h1>Commandes Analysées</h1>
+      <div class="sub">Récapitulatif mensuel · Vente Matériel</div>
+    </div>
+  </div>
+  <button class="icon-btn" id="btnSettings" title="Paramètres">⚙</button>
+</header>
+
+<div class="loading-veil" id="loadingVeil">Chargement…</div>
+
+<main>
+  <div class="totals-strip" id="globalTotals"></div>
+  <div id="augSepTableRoot"></div>
+  <div id="monthsRoot"></div>
+</main>
+
+<!-- SETTINGS -->
+<div class="overlay" id="settingsOverlay">
+  <div class="modal">
+    <h2>Paramètres Airtable</h2>
+    <div class="field">
+      <label>Token</label>
+      <input type="text" id="s_pat" placeholder="patXXXXXXXXXXXXXX">
+    </div>
+    <div class="field">
+      <label>Base ID</label>
+      <input type="text" id="s_base" placeholder="appXXXXXXXXXXXXXX">
+    </div>
+    <div class="field">
+      <label>Nom de la table</label>
+      <input type="text" id="s_table" placeholder="VenteMateriel">
+    </div>
+    <div class="field">
+      <label>Table Consommables (même base)</label>
+      <input type="text" id="s_conso_table" placeholder="Consommables">
+    </div>
+    <div class="field">
+      <label>Table Articles détaillés (même base)</label>
+      <input type="text" id="s_articles_table" placeholder="ArticlesCommandes">
+    </div>
+    <p class="hint">
+      Cette page réutilise automatiquement la configuration de Vente Matériel si elle est hébergée
+      sur le même domaine GitHub Pages (aerogomm.github.io). Sinon, renseignez-la manuellement ici.<br><br>
+      Sont affichées uniquement les affaires dont le champ <code>MontantCommission</code> est renseigné,
+      regroupées par mois selon <code>DateCommande</code> (ou "Date de commande non renseignée" si absente).<br><br>
+      La table <code>Consommables</code> (champs <code>Mois</code> texte, ex. <code>2026-08</code>, et
+      <code>Montant</code> nombre) doit exister dans la même base Airtable.
+    </p>
+    <div style="margin-top:14px;">
+      <button class="btn" id="btnSaveSettings">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const FIELD = {
+  entreprise:"Entreprise", materiel:"MaterielConcerne", commercial:"Commercial",
+  valo:"Valorisation", commission:"MontantCommission", dateAnalyse:"DateAnalysePdf",
+  date:"DateMiseEnRoute", dateCommande:"DateCommande"
+};
+
+// Réutilise la config de vente_materiel.html si présente sur la même origine
+let cfg = JSON.parse(localStorage.getItem("venteMaterielConfig") || "{}");
+if(!cfg.pat && !cfg.base){
+  cfg = JSON.parse(localStorage.getItem("commandesAnalyseesConfig") || "{}");
+} else {
+  const overlay = JSON.parse(localStorage.getItem("commandesAnalyseesConfig") || "{}");
+  if(overlay.consommablesTable) cfg.consommablesTable = overlay.consommablesTable;
+  if(overlay.articlesTable) cfg.articlesTable = overlay.articlesTable;
+}
+if(!cfg.consommablesTable) cfg.consommablesTable = "Consommables";
+if(!cfg.articlesTable) cfg.articlesTable = "ArticlesCommandes";
+
+function airtableReady(){ return !!(cfg.pat && cfg.base && cfg.table); }
+function veil(show){ $("loadingVeil").classList.toggle("show", show); }
+function euro(n){
+  return (Number(n)||0).toLocaleString("fr-FR",{style:"currency",currency:"EUR",maximumFractionDigits:0});
+}
+function escapeHtml(s){
+  return String(s??"").replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+async function fetchAllRecords(){
+  const all = [];
+  let offset;
+  do{
+    const url = new URL(`https://api.airtable.com/v0/${cfg.base}/${encodeURIComponent(cfg.table)}`);
+    url.searchParams.set("pageSize","100");
+    if(offset) url.searchParams.set("offset", offset);
+    const res = await fetch(url, { headers:{ Authorization:`Bearer ${cfg.pat}` } });
+    if(!res.ok) throw new Error("Erreur Airtable : "+res.status);
+    const data = await res.json();
+    all.push(...(data.records||[]));
+    offset = data.offset;
+  } while(offset);
+  return all;
+}
+
+function monthLabel(key){
+  if(key === "sans-date") return "Date de commande non renseignée";
+  const [y,m] = key.split("-");
+  const d = new Date(Number(y), Number(m)-1, 1);
+  const label = d.toLocaleDateString("fr-FR", {month:"long", year:"numeric"});
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+function currentYearForAugSep(){
+  // Année en cours (utile pour composer les clés YYYY-08 / YYYY-09)
+  return new Date().getFullYear();
+}
+
+async function fetchConsommables(){
+  const map = {};
+  if(!airtableReady() || !cfg.consommablesTable) return map;
+  let offset;
+  do{
+    const url = new URL(`https://api.airtable.com/v0/${cfg.base}/${encodeURIComponent(cfg.consommablesTable)}`);
+    url.searchParams.set("pageSize","100");
+    if(offset) url.searchParams.set("offset", offset);
+    const res = await fetch(url, { headers:{ Authorization:`Bearer ${cfg.pat}` } });
+    if(!res.ok) break;
+    const data = await res.json();
+    (data.records||[]).forEach(r=>{
+      const mois = r.fields.Mois;
+      if(mois) map[mois] = { id:r.id, montant:Number(r.fields.Montant)||0 };
+    });
+    offset = data.offset;
+  } while(offset);
+  return map;
+}
+
+async function upsertConsommable(monthKey, montant, existingId){
+  const fields = { Mois: monthKey, Montant: montant };
+  const base = `https://api.airtable.com/v0/${cfg.base}/${encodeURIComponent(cfg.consommablesTable)}`;
+  const url = existingId ? `${base}/${existingId}` : base;
+  const res = await fetch(url, {
+    method: existingId ? "PATCH" : "POST",
+    headers:{ Authorization:`Bearer ${cfg.pat}`, "Content-Type":"application/json" },
+    body: JSON.stringify({ fields, typecast:true })
+  });
+  if(!res.ok) throw new Error(await res.text());
+  return await res.json();
+}
+
+function recomputeAugSepTotals(commissionByMonth, consoMap, monthDefs){
+  monthDefs.forEach(m=>{
+    const conso = consoMap[m.key] !== undefined ? Number(consoMap[m.key].montant) : 800;
+    const total = (commissionByMonth[m.key]||0) + (isNaN(conso)?0:conso);
+    const totalEl = document.getElementById(`total-${m.key}`);
+    if(totalEl) totalEl.textContent = euro(total);
+  });
+}
+
+async function renderAugSepTable(analysees){
+  const year = currentYearForAugSep();
+  const monthDefs = [
+    { key: `${year}-07`, label: "Juillet" },
+    { key: `${year}-08`, label: "Août" },
+    { key: `${year}-09`, label: "Septembre" },
+    { key: `${year}-10`, label: "Octobre" },
+    { key: `${year}-11`, label: "Novembre" },
+    { key: `${year}-12`, label: "Décembre" }
+  ];
+
+  const commissionByMonth = {};
+  monthDefs.forEach(m => commissionByMonth[m.key] = 0);
+  analysees.forEach(r=>{
+    const d = r.fields[FIELD.date]; // DatePrevisionnelle (installation)
+    if(!d) return;
+    const key = d.slice(0,7);
+    if(commissionByMonth[key] !== undefined){
+      commissionByMonth[key] += Number(r.fields[FIELD.commission])||0;
+    }
+  });
+
+  let consoMap = {};
+  try{ consoMap = await fetchConsommables(); }
+  catch(e){ console.error(e); }
+
+  $("augSepTableRoot").innerHTML = `
+    <div class="aug-sep-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Mois</th>
+            ${monthDefs.map(m=>`<th>${m.label} ${year}</th>`).join("")}
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Commissions</td>
+            ${monthDefs.map(m=>`<td class="cell-value">${euro(commissionByMonth[m.key])}</td>`).join("")}
+          </tr>
+          <tr>
+            <td>Consommables</td>
+            ${monthDefs.map(m=>{
+              const val = consoMap[m.key] !== undefined ? consoMap[m.key].montant : 800;
+              return `<td><input type="text" class="row2-input" data-conso-key="${m.key}" value="${escapeHtml(val)}"></td>`;
+            }).join("")}
+          </tr>
+          <tr style="background:var(--concrete-2);font-weight:700;">
+            <td>Cumul mensuel</td>
+            ${monthDefs.map(m=>`<td class="cell-value" id="total-${m.key}">—</td>`).join("")}
+          </tr>
+        </tbody>
+      </table>
+    </div>`;
+
+  document.querySelectorAll("[data-conso-key]").forEach(input=>{
+    input.addEventListener("change", async (e)=>{
+      const monthKey = e.target.dataset.consoKey;
+      const montant = Number(e.target.value.replace(",","."))||0;
+      const existing = consoMap[monthKey];
+      try{
+        const saved = await upsertConsommable(monthKey, montant, existing?.id);
+        consoMap[monthKey] = { id: saved.id, montant };
+        recomputeAugSepTotals(commissionByMonth, consoMap, monthDefs);
+      }catch(err){
+        console.error(err);
+        alert("Erreur lors de l'enregistrement du consommable : "+err.message);
+      }
+    });
+  });
+
+  recomputeAugSepTotals(commissionByMonth, consoMap, monthDefs);
+}
+
+let ARTICLES_MAP = {}; // leadId -> [ {id, article, montant, taux, commission, rapproche} ]
+
+async function fetchArticlesMap(){
+  const map = {};
+  if(!airtableReady() || !cfg.articlesTable) return map;
+  let offset;
+  do{
+    const url = new URL(`https://api.airtable.com/v0/${cfg.base}/${encodeURIComponent(cfg.articlesTable)}`);
+    url.searchParams.set("pageSize","100");
+    if(offset) url.searchParams.set("offset", offset);
+    const res = await fetch(url, { headers:{ Authorization:`Bearer ${cfg.pat}` } });
+    if(!res.ok) break;
+    const data = await res.json();
+    (data.records||[]).forEach(r=>{
+      const leadId = r.fields.LeadId;
+      if(!leadId) return;
+      (map[leadId] = map[leadId] || []).push({
+        id: r.id,
+        article: r.fields.Article || "",
+        montant: Number(r.fields.Montant)||0,
+        taux: Number(r.fields.Taux)||0,
+        commission: Number(r.fields.Commission)||0,
+        rapproche: !!r.fields.Rapproche
+      });
+    });
+    offset = data.offset;
+  } while(offset);
+  return map;
+}
+
+async function toggleRapproche(articleId, leadId, checked){
+  const url = `https://api.airtable.com/v0/${cfg.base}/${encodeURIComponent(cfg.articlesTable)}/${articleId}`;
+  const res = await fetch(url, {
+    method:"PATCH",
+    headers:{ Authorization:`Bearer ${cfg.pat}`, "Content-Type":"application/json" },
+    body: JSON.stringify({ fields:{ Rapproche: checked } })
+  });
+  if(!res.ok) throw new Error(await res.text());
+  const item = (ARTICLES_MAP[leadId]||[]).find(a=>a.id===articleId);
+  if(item) item.rapproche = checked;
+}
+
+async function addMissedArticle(leadId){
+  const article = prompt("Nom de l'article manqué ?");
+  if(!article || !article.trim()) return;
+  const montantStr = prompt(`Montant HT de "${article}" (€) ?`);
+  const montant = Number((montantStr||"").replace(",","."));
+  if(!montantStr || isNaN(montant)){ alert("Montant invalide."); return; }
+  const tauxStr = prompt(`Taux de commission à appliquer pour "${article}", en % ? (ex : 5 pour 5%)`);
+  const taux = Number((tauxStr||"").replace(",",".").replace("%",""))/100;
+  if(!tauxStr || isNaN(taux)){ alert("Taux invalide."); return; }
+  const commission = montant * taux;
+  try{
+    veil(true);
+    const url = `https://api.airtable.com/v0/${cfg.base}/${encodeURIComponent(cfg.articlesTable)}`;
+    const res = await fetch(url, {
+      method:"POST",
+      headers:{ Authorization:`Bearer ${cfg.pat}`, "Content-Type":"application/json" },
+      body: JSON.stringify({
+        fields:{ LeadId: leadId, Article: article.trim(), Montant: montant, Taux: taux, Commission: commission, Rapproche:false },
+        typecast:true
+      })
+    });
+    if(!res.ok) throw new Error(await res.text());
+    const saved = await res.json();
+    (ARTICLES_MAP[leadId] = ARTICLES_MAP[leadId] || []).push({
+      id: saved.id, article: article.trim(), montant, taux, commission, rapproche:false
+    });
+    renderArticlesPanel(leadId);
+  }catch(err){
+    alert("Erreur lors de l'ajout de l'article : "+err.message);
+  }finally{
+    veil(false);
+  }
+}
+
+function articlesPanelHTML(leadId){
+  const items = ARTICLES_MAP[leadId] || [];
+  return `
+    <div class="articles-panel">
+      ${items.length ? `
+        <table>
+          <thead><tr><th></th><th>Article</th><th style="text-align:right;">Montant</th><th style="text-align:right;">Taux</th><th style="text-align:right;">Commission</th></tr></thead>
+          <tbody>
+            ${items.map(a=>`
+              <tr>
+                <td><input type="checkbox" class="chk-rapproche" data-article-id="${a.id}" data-lead-id="${leadId}" ${a.rapproche?"checked":""}></td>
+                <td class="${a.rapproche?"reconciled":""}">${escapeHtml(a.article)}${a.rapproche?" ✓":""}</td>
+                <td class="num">${euro(a.montant)}</td>
+                <td class="num">${(a.taux*100).toFixed(1)}%</td>
+                <td class="num">${euro(a.commission)}</td>
+              </tr>`).join("")}
+          </tbody>
+        </table>
+      ` : `<p style="color:var(--ink-soft);font-size:12.5px;margin:4px 0;">Aucun article enregistré pour ce dossier.</p>`}
+      <button type="button" class="btn-add-article" data-lead-id="${leadId}">+ Ajouter un article manqué</button>
+    </div>`;
+}
+
+function renderArticlesPanel(leadId){
+  const panel = document.querySelector(`.articles-row[data-for="${leadId}"] .articles-panel-wrap`);
+  if(!panel) return;
+  panel.innerHTML = articlesPanelHTML(leadId);
+  bindArticlesPanelEvents(leadId);
+}
+
+function bindArticlesPanelEvents(leadId){
+  const row = document.querySelector(`.articles-row[data-for="${leadId}"]`);
+  if(!row) return;
+  row.querySelectorAll(".chk-rapproche").forEach(chk=>{
+    chk.addEventListener("change", async (e)=>{
+      const articleId = e.target.dataset.articleId;
+      const checked = e.target.checked;
+      e.target.disabled = true;
+      try{
+        await toggleRapproche(articleId, leadId, checked);
+        renderArticlesPanel(leadId);
+      }catch(err){
+        alert("Erreur : "+err.message);
+        e.target.checked = !checked;
+        e.target.disabled = false;
+      }
+    });
+  });
+  row.querySelectorAll(".btn-add-article").forEach(btn=>{
+    btn.addEventListener("click", ()=> addMissedArticle(leadId));
+  });
+}
+
+async function render(records){
+  const analysees = records.filter(r => Number(r.fields[FIELD.commission]) > 0);
+
+  renderAugSepTable(analysees);
+
+  if(!analysees.length){
+    $("globalTotals").innerHTML = "";
+    $("monthsRoot").innerHTML = `<div class="empty-state">Aucune commande analysée pour le moment.<br>Les affaires apparaîtront ici dès qu'une commission aura été calculée via la lecture PDF.</div>`;
+    return;
+  }
+
+  try{ ARTICLES_MAP = await fetchArticlesMap(); }
+  catch(e){ console.error(e); ARTICLES_MAP = {}; }
+
+  const groups = {};
+  analysees.forEach(r=>{
+    const d = r.fields[FIELD.dateCommande];
+    const key = d ? d.slice(0,7) : "sans-date";
+    (groups[key] = groups[key] || []).push(r);
+  });
+
+  const monthKeys = Object.keys(groups).filter(k=>k!=="sans-date").sort().reverse();
+  if(groups["sans-date"]) monthKeys.push("sans-date");
+
+  let grandValo = 0, grandCommission = 0;
+  analysees.forEach(r=>{
+    grandValo += Number(r.fields[FIELD.valo])||0;
+    grandCommission += Number(r.fields[FIELD.commission])||0;
+  });
+
+  $("globalTotals").innerHTML = `
+    <div class="card"><div class="label">Commandes analysées</div><div class="value">${analysees.length}</div></div>
+    <div class="card"><div class="label">Valorisation totale</div><div class="value">${euro(grandValo)}</div></div>
+    <div class="card"><div class="label">Commission totale</div><div class="value">${euro(grandCommission)}</div></div>
+  `;
+
+  $("monthsRoot").innerHTML = monthKeys.map(key=>{
+    const items = groups[key].sort((a,b)=> (b.fields[FIELD.dateCommande]||"").localeCompare(a.fields[FIELD.dateCommande]||""));
+    const monthValo = items.reduce((s,r)=> s + (Number(r.fields[FIELD.valo])||0), 0);
+    const monthCommission = items.reduce((s,r)=> s + (Number(r.fields[FIELD.commission])||0), 0);
+    return `
+      <div class="month-block">
+        <div class="month-head">
+          <h2 class="month-title">${monthLabel(key)}</h2>
+          <div class="month-figures">
+            <span>${items.length} commande${items.length>1?"s":""}</span>
+            <span>Valorisation : <b>${euro(monthValo)}</b></span>
+            <span>Commission : <b>${euro(monthCommission)}</b></span>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th></th><th>Entreprise</th><th>Matériel</th><th>Date de commande</th><th>Date de mise en route</th>
+              <th style="text-align:right;">Valorisation</th>
+              <th style="text-align:right;">Commission</th>
+              <th>Date d'analyse</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(r=>{
+              const f = r.fields;
+              const dateAff = f[FIELD.dateAnalyse]
+                ? new Date(f[FIELD.dateAnalyse]).toLocaleDateString("fr-FR")
+                : "—";
+              const dateMiseEnRoute = f[FIELD.date]
+                ? new Date(f[FIELD.date]).toLocaleDateString("fr-FR")
+                : "—";
+              const dateCommandeAff = f[FIELD.dateCommande]
+                ? new Date(f[FIELD.dateCommande]).toLocaleDateString("fr-FR")
+                : "—";
+              const nbArticles = (ARTICLES_MAP[r.id]||[]).length;
+              return `<tr>
+                <td style="text-align:center;"><button class="btn-toggle-articles" data-toggle-for="${r.id}" title="Voir le détail des articles">▸</button></td>
+                <td>${escapeHtml(f[FIELD.entreprise]||"—")}</td>
+                <td>${escapeHtml(f[FIELD.materiel]||"—")}${nbArticles?` <span style="color:var(--ink-soft);font-size:11px;">(${nbArticles} art.)</span>`:""}</td>
+                <td>${dateCommandeAff}</td>
+                <td>${dateMiseEnRoute}</td>
+                <td class="num">${euro(f[FIELD.valo])}</td>
+                <td class="num">${euro(f[FIELD.commission])}</td>
+                <td>${dateAff}</td>
+                <td style="text-align:center;"><button class="btn-clear-row" data-id="${r.id}" data-name="${escapeHtml(f[FIELD.entreprise]||"cette affaire")}" title="Retirer cette ligne du récapitulatif">✕</button></td>
+              </tr>
+              <tr class="articles-row" data-for="${r.id}" style="display:none;">
+                <td colspan="9"><div class="articles-panel-wrap">${articlesPanelHTML(r.id)}</div></td>
+              </tr>`;
+            }).join("")}
+          </tbody>
+        </table>
+      </div>`;
+  }).join("");
+
+  document.querySelectorAll(".btn-toggle-articles").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const leadId = btn.dataset.toggleFor;
+      const row = document.querySelector(`.articles-row[data-for="${leadId}"]`);
+      if(!row) return;
+      const isOpen = row.style.display !== "none";
+      row.style.display = isOpen ? "none" : "table-row";
+      btn.textContent = isOpen ? "▸" : "▾";
+      if(!isOpen) bindArticlesPanelEvents(leadId);
+    });
+  });
+
+  document.querySelectorAll(".btn-clear-row").forEach(btn=>{
+    btn.addEventListener("click", async ()=>{
+      const id = btn.dataset.id;
+      const name = btn.dataset.name;
+      if(!confirm(`Retirer "${name}" du récapitulatif des commandes analysées ?\n\nCela efface uniquement le montant de commission et la date d'analyse sur cette fiche (la fiche elle-même n'est pas supprimée dans Vente Matériel).`)) return;
+      try{
+        veil(true);
+        await clearAnalysis(id);
+        await loadAll();
+      }catch(err){
+        alert("Erreur pendant la suppression : "+err.message);
+      }finally{
+        veil(false);
+      }
+    });
+  });
+}
+
+async function clearAnalysis(recordId){
+  const url = `https://api.airtable.com/v0/${cfg.base}/${encodeURIComponent(cfg.table)}/${recordId}`;
+  const res = await fetch(url, {
+    method:"PATCH",
+    headers:{ Authorization:`Bearer ${cfg.pat}`, "Content-Type":"application/json" },
+    body: JSON.stringify({ fields:{ [FIELD.commission]: null, [FIELD.dateAnalyse]: null } })
+  });
+  if(!res.ok) throw new Error(await res.text());
+  return await res.json();
+}
+
+async function loadAll(){
+  if(!airtableReady()){
+    $("monthsRoot").innerHTML = `<div class="empty-state">Configurez Airtable via ⚙ pour afficher le récapitulatif.</div>`;
+    openSettings();
+    return;
+  }
+  veil(true);
+  try{
+    const records = await fetchAllRecords();
+    await render(records);
+  }catch(err){
+    console.error(err);
+    $("monthsRoot").innerHTML = `<div class="empty-state">Erreur de chargement : ${escapeHtml(err.message)}</div>`;
+  }finally{
+    veil(false);
+  }
+}
+
+function openSettings(){
+  $("s_pat").value = cfg.pat || "";
+  $("s_base").value = cfg.base || "";
+  $("s_table").value = cfg.table || "VenteMateriel";
+  $("s_conso_table").value = cfg.consommablesTable || "Consommables";
+  $("s_articles_table").value = cfg.articlesTable || "ArticlesCommandes";
+  $("settingsOverlay").classList.add("open");
+}
+$("btnSettings").addEventListener("click", openSettings);
+$("settingsOverlay").addEventListener("click", (e)=>{ if(e.target.id==="settingsOverlay") $("settingsOverlay").classList.remove("open"); });
+$("btnSaveSettings").addEventListener("click", ()=>{
+  cfg.pat = $("s_pat").value.trim();
+  cfg.base = $("s_base").value.trim();
+  cfg.table = $("s_table").value.trim() || "VenteMateriel";
+  cfg.consommablesTable = $("s_conso_table").value.trim() || "Consommables";
+  cfg.articlesTable = $("s_articles_table").value.trim() || "ArticlesCommandes";
+  localStorage.setItem("commandesAnalyseesConfig", JSON.stringify(cfg));
+  $("settingsOverlay").classList.remove("open");
+  loadAll();
+});
+
+loadAll();
+</script>
+</body>
+</html>
