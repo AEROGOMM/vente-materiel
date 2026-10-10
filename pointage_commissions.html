@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pointage des commissions — Vente Matériel</title>
+<style>
+  :root{
+    --bleu:#3B6E8F; --bleu-fonce:#2C5470; --bleu-clair:#EAF2FB;
+    --vert:#2E7D4F; --vert-clair:#E6F4EC; --orange:#C77700; --orange-clair:#FFF4E0;
+    --rouge:#B3261E; --gris:#6B7280; --bord:#D9DEE5; --fond:#F4F6F9; --blanc:#fff; --texte:#1F2933;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:var(--fond);color:var(--texte);font-size:14px}
+  header{background:var(--bleu);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;position:sticky;top:0;z-index:20}
+  header h1{font-size:18px;margin:0;flex:1;min-width:200px}
+  header a,header button{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer;text-decoration:none}
+  header a:hover,header button:hover{background:rgba(255,255,255,.28)}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin-bottom:14px}
+  .stat{background:#fff;border:1px solid var(--bord);border-radius:8px;padding:12px 14px}
+  .stat .lbl{font-size:12px;color:var(--gris)}
+  .stat .val{font-size:20px;font-weight:700;margin-top:4px}
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+  .toolbar input[type=search],.toolbar select{padding:8px 10px;border:1px solid var(--bord);border-radius:6px;font-size:14px;background:#fff}
+  .toolbar input[type=search]{flex:1;min-width:200px}
+  .card{background:#fff;border:1px solid var(--bord);border-radius:10px;margin-bottom:14px;overflow:hidden}
+  .card.complete{border-color:var(--vert)}
+  .card-head{padding:12px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;cursor:pointer;user-select:none}
+  .card-head .chev{font-size:12px;color:var(--gris);width:14px;transition:transform .15s}
+  .card.open .chev{transform:rotate(90deg)}
+  .card-head .nom{font-weight:700;font-size:15px}
+  .card-head .sub{color:var(--gris);font-size:12px;margin-top:2px}
+  .card-head .info{flex:1;min-width:180px}
+  .badge{font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap}
+  .badge.ok{background:var(--vert-clair);color:var(--vert)}
+  .badge.partiel{background:var(--orange-clair);color:var(--orange)}
+  .badge.zero{background:#F1F3F5;color:var(--gris)}
+  .badge.vide{background:#FDECEA;color:var(--rouge)}
+  .montant-head{font-weight:700;color:var(--bleu-fonce);white-space:nowrap}
+  .progress{height:4px;background:#EEF1F4}
+  .progress div{height:100%;background:var(--vert);transition:width .2s}
+  .card-body{display:none;border-top:1px solid var(--bord)}
+  .card.open .card-body{display:block}
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:9px 12px;text-align:left;border-bottom:1px solid #EEF1F4;font-size:13px}
+  th{background:#FAFBFC;color:var(--gris);font-weight:600;font-size:12px}
+  td.num,th.num{text-align:right;white-space:nowrap}
+  td.chk,th.chk{width:44px;text-align:center}
+  tr.pointe td{background:var(--vert-clair)}
+  tr.pointe td.art{color:var(--vert);font-weight:600}
+  tr.pointe td.art::before{content:"✓ "}
+  input[type=checkbox].pt{width:20px;height:20px;cursor:pointer;accent-color:var(--vert)}
+  tr.saving{opacity:.5}
+  .card-foot{padding:10px 16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;background:#FAFBFC}
+  .card-foot .tot{flex:1;font-size:13px}
+  .card-foot .tot b{color:var(--vert)}
+  .ecart{color:var(--orange);font-size:12px;display:block;margin-top:3px}
+  .btn{border:1px solid var(--bleu);background:#fff;color:var(--bleu);border-radius:6px;padding:7px 12px;font-size:13px;cursor:pointer}
+  .btn:hover{background:var(--bleu-clair)}
+  .btn.plein{background:var(--bleu);color:#fff}
+  .btn.plein:hover{background:var(--bleu-fonce)}
+  .ajout{display:none;padding:12px 16px;border-top:1px dashed var(--bord);background:var(--bleu-clair);gap:8px;flex-wrap:wrap;align-items:flex-end}
+  .ajout.open{display:flex}
+  .ajout label{display:flex;flex-direction:column;font-size:12px;color:var(--bleu-fonce);gap:3px}
+  .ajout input[type=text],.ajout input[type=number]{padding:7px 8px;border:1px solid var(--bord);border-radius:6px;font-size:13px}
+  .ajout .chkl{flex-direction:row;align-items:center;gap:6px;padding-bottom:8px}
+  .vide-msg{padding:14px 16px;color:var(--gris);font-style:italic}
+  .msg{background:#fff;border:1px solid var(--bord);border-radius:8px;padding:24px;text-align:center;color:var(--gris)}
+  .msg.err{border-color:var(--rouge);color:var(--rouge)}
+  .overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .overlay.open{display:flex}
+  .modal{background:#fff;border-radius:10px;padding:20px;width:100%;max-width:460px}
+  .modal h2{margin:0 0 14px;font-size:17px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;font-weight:600;margin-bottom:4px;color:var(--bleu-fonce)}
+  .field input{width:100%;padding:8px 10px;border:1px solid var(--bord);border-radius:6px;font-size:14px}
+  .hint{font-size:12px;color:var(--gris);line-height:1.5}
+  .modal .actions{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#1F2933;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;display:none;z-index:60;max-width:90vw}
+  .toast.err{background:var(--rouge)}
+  @media (max-width:640px){
+    th.taux,td.taux{display:none}
+    th,td{padding:8px 6px}
+  }
+  @media print{
+    header,.toolbar,.card-foot .btn,.ajout,.chev{display:none!important}
+    body{background:#fff}
+    .card{break-inside:avoid}
+    .card-body{display:block!important}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>✅ Pointage des commissions fournisseur</h1>
+  <a href="vente_materiel.html">← Vente Matériel</a>
+  <button id="btnPrint">🖨 Imprimer</button>
+  <button id="btnRefresh">↻ Actualiser</button>
+  <button id="btnSettings">⚙ Paramètres</button>
+</header>
+
+<div class="wrap">
+  <div class="stats">
+    <div class="stat"><div class="lbl">Clients en commission due</div><div class="val" id="stClients">–</div></div>
+    <div class="stat"><div class="lbl">Articles pointés</div><div class="val" id="stArticles">–</div></div>
+    <div class="stat"><div class="lbl">Commission pointée</div><div class="val" id="stPointe" style="color:var(--vert)">–</div></div>
+    <div class="stat"><div class="lbl">Reste à retrouver</div><div class="val" id="stReste" style="color:var(--orange)">–</div></div>
+  </div>
+
+  <div class="toolbar">
+    <input type="search" id="search" placeholder="Rechercher un client ou un article…" autocomplete="off">
+    <select id="filtre">
+      <option value="tous">Tous les clients</option>
+      <option value="incomplet" selected>À pointer (incomplets)</option>
+      <option value="complet">Entièrement pointés</option>
+    </select>
+    <button class="btn" id="btnOpenAll">Tout déplier</button>
+  </div>
+
+  <div id="list"><div class="msg">Chargement…</div></div>
+</div>
+
+<div class="overlay" id="settingsOverlay">
+  <div class="modal">
+    <h2>⚙ Paramètres</h2>
+    <div class="field"><label>Airtable — Jeton d'accès (PAT)</label><input type="password" id="s_pat" placeholder="pat..."></div>
+    <div class="field"><label>Airtable — Base ID</label><input type="text" id="s_base" placeholder="app..."></div>
+    <div class="field"><label>Table des ventes</label><input type="text" id="s_table" placeholder="VenteMateriel"></div>
+    <div class="field"><label>Table du détail des articles</label><input type="text" id="s_articles" placeholder="ArticlesCommandes"></div>
+    <div class="field"><label>Statut à afficher</label><input type="text" id="s_statut" placeholder="Commission due"></div>
+    <p class="hint">Si cette page est dans le même dépôt GitHub que <code>vente_materiel.html</code>, elle reprend automatiquement le jeton et la base. Vous n'avez rien à saisir dans ce cas.</p>
+    <div class="actions">
+      <button class="btn" id="btnCancelSettings">Annuler</button>
+      <button class="btn plein" id="btnSaveSettings">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const OWN_KEY = "pointageCommissionsConfig";
+let cfg = loadCfg();
+let leads = [];          // fiches VenteMateriel
+let articlesByLead = {}; // LeadId -> [records]
+const openCards = new Set();
+
+function readLS(k){ try{ return JSON.parse(localStorage.getItem(k) || "{}"); }catch(e){ return {}; } }
+function loadCfg(){
+  const own = readLS(OWN_KEY), vm = readLS("venteMaterielConfig");
+  return {
+    pat: own.pat || vm.pat || "",
+    base: own.base || vm.base || "",
+    table: own.table || vm.table || "VenteMateriel",
+    articlesTable: own.articlesTable || vm.articlesTable || vm.articlesCommandesTable || "ArticlesCommandes",
+    statut: own.statut || "Commission due"
+  };
+}
+
+const eur = n => (Number(n) || 0).toLocaleString("fr-FR", {style:"currency", currency:"EUR"});
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const dateFr = d => { if(!d) return ""; const x = new Date(d); return isNaN(x) ? d : x.toLocaleDateString("fr-FR"); };
+const tauxTxt = t => { if(t === undefined || t === null || t === "") return ""; const n = Number(t); return (n <= 1 ? n*100 : n).toLocaleString("fr-FR", {maximumFractionDigits:2}) + " %"; };
+
+function toast(msg, err){
+  const t = $("toast"); t.textContent = msg; t.className = "toast" + (err ? " err" : ""); t.style.display = "block";
+  clearTimeout(toast._t); toast._t = setTimeout(()=> t.style.display = "none", err ? 6000 : 2500);
+}
+
+async function at(path, opts = {}){
+  const res = await fetch(`https://api.airtable.com/v0/${cfg.base}/${path}`, {
+    ...opts,
+    headers: { "Authorization": `Bearer ${cfg.pat}`, "Content-Type": "application/json" }
+  });
+  if(!res.ok){
+    let detail = ""; try{ const j = await res.json(); detail = j.error?.message || j.error?.type || JSON.stringify(j.error); }catch(e){}
+    throw new Error(`Airtable ${res.status} ${detail}`);
+  }
+  return res.json();
+}
+async function fetchAll(table, params = ""){
+  let out = [], offset = "";
+  do{
+    const d = await at(`${encodeURIComponent(table)}?pageSize=100${params}${offset ? "&offset=" + offset : ""}`);
+    out = out.concat(d.records); offset = d.offset || "";
+  } while(offset);
+  return out;
+}
+
+// Retrouve la clé LeadId utilisée pour relier les articles à une fiche
+function leadKey(lead){
+  const cands = [lead.id, lead.fields.LeadId, lead.fields.Id, lead.fields.ID];
+  return cands.find(k => k && articlesByLead[k]) || lead.id;
+}
+function articlesOf(lead){ return articlesByLead[leadKey(lead)] || []; }
+function leadNom(f){ return f.Entreprise || f.Nom || f.Name || f.Interlocuteur || "(Sans nom)"; }
+
+async function loadAll(){
+  if(!cfg.pat || !cfg.base){
+    $("list").innerHTML = `<div class="msg">Configuration manquante. Ouvrez ⚙ Paramètres pour saisir le jeton et la base Airtable.</div>`;
+    return;
+  }
+  $("list").innerHTML = `<div class="msg">Chargement…</div>`;
+  try{
+    const statut = cfg.statut.replace(/'/g, "\\'");
+    const [l, a] = await Promise.all([
+      fetchAll(cfg.table, "&filterByFormula=" + encodeURIComponent(`{Statut}='${statut}'`)),
+      fetchAll(cfg.articlesTable)
+    ]);
+    leads = l.sort((x, y) => leadNom(x.fields).localeCompare(leadNom(y.fields), "fr"));
+    articlesByLead = {};
+    a.forEach(r => {
+      const k = r.fields.LeadId; if(!k) return;
+      (articlesByLead[k] = articlesByLead[k] || []).push(r);
+    });
+    Object.values(articlesByLead).forEach(arr => arr.sort((x, y) => (x.fields.Article || "").localeCompare(y.fields.Article || "", "fr")));
+    render();
+  }catch(e){
+    $("list").innerHTML = `<div class="msg err">Erreur de chargement : ${esc(e.message)}<br><br>Vérifiez les noms de tables dans ⚙ Paramètres.</div>`;
+  }
+}
+
+function leadStats(lead){
+  const arts = articlesOf(lead);
+  const nb = arts.length, nbOk = arts.filter(r => r.fields.Rapproche).length;
+  const tot = arts.reduce((s, r) => s + (Number(r.fields.Commission) || 0), 0);
+  const ok = arts.filter(r => r.fields.Rapproche).reduce((s, r) => s + (Number(r.fields.Commission) || 0), 0);
+  return {arts, nb, nbOk, tot, ok, complet: nb > 0 && nbOk === nb};
+}
+
+function render(){
+  const q = $("search").value.trim().toLowerCase();
+  const filtre = $("filtre").value;
+  let gNb = 0, gOk = 0, gTot = 0, gPointe = 0;
+  leads.forEach(l => { const s = leadStats(l); gNb += s.nb; gOk += s.nbOk; gTot += s.tot; gPointe += s.ok; });
+  $("stClients").textContent = leads.length;
+  $("stArticles").textContent = `${gOk} / ${gNb}`;
+  $("stPointe").textContent = eur(gPointe);
+  $("stReste").textContent = eur(gTot - gPointe);
+
+  const visibles = leads.filter(l => {
+    const s = leadStats(l);
+    if(filtre === "incomplet" && s.complet) return false;
+    if(filtre === "complet" && !s.complet) return false;
+    if(!q) return true;
+    const f = l.fields;
+    const hay = [leadNom(f), f.Interlocuteur, ...s.arts.map(r => r.fields.Article)].join(" ").toLowerCase();
+    return hay.includes(q);
+  });
+
+  if(!leads.length){ $("list").innerHTML = `<div class="msg">Aucun client au statut « ${esc(cfg.statut)} ».</div>`; return; }
+  if(!visibles.length){ $("list").innerHTML = `<div class="msg">Aucun client ne correspond à ce filtre.</div>`; return; }
+
+  $("list").innerHTML = visibles.map(cardHtml).join("");
+}
+
+function cardHtml(lead){
+  const f = lead.fields, s = leadStats(lead);
+  const pct = s.nb ? Math.round(s.nbOk / s.nb * 100) : 0;
+  const badge = !s.nb ? `<span class="badge vide">Aucun article</span>`
+    : s.complet ? `<span class="badge ok">✓ ${s.nbOk}/${s.nb} pointés</span>`
+    : s.nbOk ? `<span class="badge partiel">${s.nbOk}/${s.nb} pointés</span>`
+    : `<span class="badge zero">0/${s.nb} pointé</span>`;
+  const sub = [f.Interlocuteur, f.DateCommande ? "Commande du " + dateFr(f.DateCommande) : "", f.DateMiseEnRoute ? "Mise en route " + dateFr(f.DateMiseEnRoute) : ""].filter(Boolean).join(" · ");
+  const montantFiche = Number(f.MontantCommission) || 0;
+  const ecart = montantFiche && s.nb && Math.abs(montantFiche - s.tot) > 0.01
+    ? `<span class="ecart">⚠ Montant commission sur la fiche : ${eur(montantFiche)} (écart de ${eur(montantFiche - s.tot)} avec les articles)</span>` : "";
+
+  const rows = s.arts.map(r => {
+    const a = r.fields;
+    return `<tr class="${a.Rapproche ? "pointe" : ""}" id="row-${r.id}">
+      <td class="chk"><input type="checkbox" class="pt" data-art="${r.id}" ${a.Rapproche ? "checked" : ""} title="Présent dans le récapitulatif"></td>
+      <td class="art">${esc(a.Article || "(article sans nom)")}</td>
+      <td class="num">${a.Montant !== undefined ? eur(a.Montant) : ""}</td>
+      <td class="num taux">${tauxTxt(a.Taux)}</td>
+      <td class="num"><b>${eur(a.Commission)}</b></td>
+    </tr>`;
+  }).join("");
+
+  return `<div class="card ${s.complet ? "complete" : ""} ${openCards.has(lead.id) ? "open" : ""}" data-lead="${lead.id}">
+    <div class="card-head" data-toggle="${lead.id}">
+      <span class="chev">▶</span>
+      <div class="info"><div class="nom">${esc(leadNom(f))}</div>${sub ? `<div class="sub">${esc(sub)}</div>` : ""}</div>
+      ${badge}
+      <span class="montant-head">${eur(s.tot || montantFiche)}</span>
+    </div>
+    <div class="progress"><div style="width:${pct}%"></div></div>
+    <div class="card-body">
+      ${s.nb ? `<table>
+        <thead><tr><th class="chk">✓</th><th>Article commandé</th><th class="num">Montant HT</th><th class="num taux">Taux</th><th class="num">Commission</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>` : `<div class="vide-msg">Aucun article enregistré pour ce client. Utilisez « + Article manqué » pour l'ajouter.</div>`}
+      <div class="card-foot">
+        <div class="tot">Pointé : <b>${eur(s.ok)}</b> sur ${eur(s.tot)}${ecart}</div>
+        ${s.nb && !s.complet ? `<button class="btn" data-all="${lead.id}" data-val="1">Tout cocher</button>` : ""}
+        ${s.nbOk ? `<button class="btn" data-all="${lead.id}" data-val="0">Tout décocher</button>` : ""}
+        <button class="btn plein" data-add="${lead.id}">+ Article manqué</button>
+      </div>
+      <div class="ajout" id="add-${lead.id}">
+        <label style="flex:2;min-width:160px">Article<input type="text" data-f="article"></label>
+        <label style="width:110px">Montant HT (€)<input type="number" step="0.01" data-f="montant"></label>
+        <label style="width:90px">Taux (%)<input type="number" step="0.01" data-f="taux"></label>
+        <label class="chkl"><input type="checkbox" data-f="pointe" checked> Présent dans le récap</label>
+        <button class="btn plein" data-save="${lead.id}">Ajouter</button>
+        <button class="btn" data-add="${lead.id}">Annuler</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function findArticle(id){
+  for(const arr of Object.values(articlesByLead)){ const r = arr.find(x => x.id === id); if(r) return r; }
+  return null;
+}
+
+async function patchArticles(updates){ // [{id, fields}]
+  for(let i = 0; i < updates.length; i += 10){
+    await at(encodeURIComponent(cfg.articlesTable), {method:"PATCH", body: JSON.stringify({records: updates.slice(i, i+10), typecast:true})});
+  }
+}
+
+async function togglePointage(artId, val){
+  const r = findArticle(artId); if(!r) return;
+  const old = !!r.fields.Rapproche;
+  r.fields.Rapproche = val;
+  render();
+  try{
+    await patchArticles([{id: artId, fields: {Rapproche: val}}]);
+  }catch(e){
+    r.fields.Rapproche = old; render();
+    toast("Enregistrement impossible : " + e.message, true);
+  }
+}
+
+async function setAll(leadId, val){
+  const lead = leads.find(l => l.id === leadId); if(!lead) return;
+  const cibles = articlesOf(lead).filter(r => !!r.fields.Rapproche !== val);
+  if(!cibles.length) return;
+  cibles.forEach(r => r.fields.Rapproche = val); render();
+  try{
+    await patchArticles(cibles.map(r => ({id: r.id, fields: {Rapproche: val}})));
+    toast(`${cibles.length} article(s) ${val ? "pointé(s)" : "dépointé(s)"}`);
+  }catch(e){
+    cibles.forEach(r => r.fields.Rapproche = !val); render();
+    toast("Enregistrement impossible : " + e.message, true);
+  }
+}
+
+async function addArticle(leadId){
+  const box = $("add-" + leadId);
+  const get = n => box.querySelector(`[data-f="${n}"]`);
+  const article = get("article").value.trim();
+  const montant = parseFloat(get("montant").value);
+  const tauxPct = parseFloat(get("taux").value);
+  if(!article){ toast("Indiquez le nom de l'article", true); return; }
+  if(isNaN(montant)){ toast("Indiquez le montant HT", true); return; }
+  const taux = isNaN(tauxPct) ? 0 : tauxPct / 100;
+  const lead = leads.find(l => l.id === leadId);
+  const key = leadKey(lead);
+  const fields = {LeadId: key, Article: article, Montant: montant, Taux: taux,
+                  Commission: Math.round(montant * taux * 100) / 100, Rapproche: get("pointe").checked};
+  try{
+    const d = await at(encodeURIComponent(cfg.articlesTable), {method:"POST", body: JSON.stringify({records:[{fields}], typecast:true})});
+    (articlesByLead[key] = articlesByLead[key] || []).push(d.records[0]);
+    openCards.add(leadId);
+    render();
+    toast("Article ajouté");
+  }catch(e){ toast("Ajout impossible : " + e.message, true); }
+}
+
+// Événements
+$("list").addEventListener("click", e => {
+  const t = e.target;
+  const tog = t.closest("[data-toggle]");
+  if(tog){
+    const id = tog.dataset.toggle;
+    openCards.has(id) ? openCards.delete(id) : openCards.add(id);
+    tog.closest(".card").classList.toggle("open");
+    return;
+  }
+  if(t.dataset.all){ setAll(t.dataset.all, t.dataset.val === "1"); return; }
+  if(t.dataset.add){ $("add-" + t.dataset.add).classList.toggle("open"); return; }
+  if(t.dataset.save){ addArticle(t.dataset.save); return; }
+});
+$("list").addEventListener("change", e => {
+  if(e.target.classList.contains("pt")) togglePointage(e.target.dataset.art, e.target.checked);
+});
+$("search").addEventListener("input", render);
+$("filtre").addEventListener("change", render);
+$("btnRefresh").addEventListener("click", loadAll);
+$("btnPrint").addEventListener("click", () => window.print());
+$("btnOpenAll").addEventListener("click", () => {
+  const tout = openCards.size < leads.length;
+  openCards.clear(); if(tout) leads.forEach(l => openCards.add(l.id));
+  $("btnOpenAll").textContent = tout ? "Tout replier" : "Tout déplier";
+  render();
+});
+
+function openSettings(){
+  $("s_pat").value = cfg.pat; $("s_base").value = cfg.base; $("s_table").value = cfg.table;
+  $("s_articles").value = cfg.articlesTable; $("s_statut").value = cfg.statut;
+  $("settingsOverlay").classList.add("open");
+}
+$("btnSettings").addEventListener("click", openSettings);
+$("btnCancelSettings").addEventListener("click", () => $("settingsOverlay").classList.remove("open"));
+$("btnSaveSettings").addEventListener("click", () => {
+  cfg = {
+    pat: $("s_pat").value.trim(), base: $("s_base").value.trim(),
+    table: $("s_table").value.trim() || "VenteMateriel",
+    articlesTable: $("s_articles").value.trim() || "ArticlesCommandes",
+    statut: $("s_statut").value.trim() || "Commission due"
+  };
+  localStorage.setItem(OWN_KEY, JSON.stringify(cfg));
+  $("settingsOverlay").classList.remove("open");
+  loadAll();
+});
+
+loadAll();
+</script>
+</body>
+</html>
