@@ -45,7 +45,7 @@
   tbody tr:hover{background:var(--concrete-2);}
   .num{font-family:'IBM Plex Mono',monospace;text-align:right;white-space:nowrap;}
 
-  .aug-sep-table{background:var(--paper);border:1px solid var(--line);border-radius:8px;margin-bottom:24px;overflow:hidden;box-shadow:var(--shadow);}
+  .aug-sep-table{background:var(--paper);border:1px solid var(--line);border-radius:8px;margin-bottom:24px;overflow-x:auto;box-shadow:var(--shadow);}
   .aug-sep-table table{width:100%;border-collapse:collapse;}
   .aug-sep-table thead th{background:var(--graphite-2);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:12px 18px;text-align:left;}
   .aug-sep-table thead th:first-child{width:220px;}
@@ -248,14 +248,16 @@ function recomputeAugSepTotals(commissionByMonth, consoMap, monthDefs){
 }
 
 async function renderAugSepTable(analysees){
-  const year = currentYearForAugSep();
+  // Années fixées : juillet → décembre 2026, puis janvier 2027
+  // (provisoire, en attendant une solution pour toute l'année 2027)
   const monthDefs = [
-    { key: `${year}-07`, label: "Juillet" },
-    { key: `${year}-08`, label: "Août" },
-    { key: `${year}-09`, label: "Septembre" },
-    { key: `${year}-10`, label: "Octobre" },
-    { key: `${year}-11`, label: "Novembre" },
-    { key: `${year}-12`, label: "Décembre" }
+    { key: "2026-07", label: "Juillet",   year: 2026 },
+    { key: "2026-08", label: "Août",      year: 2026 },
+    { key: "2026-09", label: "Septembre", year: 2026 },
+    { key: "2026-10", label: "Octobre",   year: 2026 },
+    { key: "2026-11", label: "Novembre",  year: 2026 },
+    { key: "2026-12", label: "Décembre",  year: 2026 },
+    { key: "2027-01", label: "Janvier",   year: 2027 }
   ];
 
   const commissionByMonth = {};
@@ -279,7 +281,7 @@ async function renderAugSepTable(analysees){
         <thead>
           <tr>
             <th>Mois</th>
-            ${monthDefs.map(m=>`<th>${m.label} ${year}</th>`).join("")}
+            ${monthDefs.map(m=>`<th>${m.label} ${m.year}</th>`).join("")}
           </tr>
         </thead>
         <tbody>
