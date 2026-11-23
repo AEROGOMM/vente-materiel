@@ -47,6 +47,9 @@
 
   .aug-sep-table{background:var(--paper);border:1px solid var(--line);border-radius:8px;margin-bottom:24px;overflow-x:auto;box-shadow:var(--shadow);}
   .aug-sep-table table{width:100%;border-collapse:collapse;}
+  .year-bar{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+  .year-bar label{font-family:'IBM Plex Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);}
+  .year-bar select{font-family:'Inter',sans-serif;font-size:14px;font-weight:600;padding:7px 12px;border:1px solid var(--line);border-radius:4px;background:var(--paper);color:var(--ink);cursor:pointer;}
   .aug-sep-table thead th{background:var(--graphite-2);color:#fff;font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.03em;padding:12px 18px;text-align:left;}
   .aug-sep-table thead th:first-child{width:220px;}
   .aug-sep-table tbody td{padding:12px 18px;border-bottom:1px solid var(--line);font-size:14px;}
@@ -197,6 +200,15 @@ function monthLabel(key){
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
 
+// ---- Sélecteur d'année du tableau mensuel
+const FIRST_YEAR = 2026, FIRST_MONTH = 7;   // l'historique commence en juillet 2026
+const MONTH_NAMES = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+let LAST_ANALYSEES = [];
+let SELECTED_YEAR = (()=>{
+  try{ const v = Number(localStorage.getItem("va_selected_year")); if(v) return v; }catch(_){}
+  return new Date().getFullYear();
+})();
+
 function currentYearForAugSep(){
   // Année en cours (utile pour composer les clés YYYY-08 / YYYY-09)
   return new Date().getFullYear();
@@ -248,17 +260,18 @@ function recomputeAugSepTotals(commissionByMonth, consoMap, monthDefs){
 }
 
 async function renderAugSepTable(analysees){
-  // Années fixées : juillet → décembre 2026, puis janvier 2027
-  // (provisoire, en attendant une solution pour toute l'année 2027)
-  const monthDefs = [
-    { key: "2026-07", label: "Juillet",   year: 2026 },
-    { key: "2026-08", label: "Août",      year: 2026 },
-    { key: "2026-09", label: "Septembre", year: 2026 },
-    { key: "2026-10", label: "Octobre",   year: 2026 },
-    { key: "2026-11", label: "Novembre",  year: 2026 },
-    { key: "2026-12", label: "Décembre",  year: 2026 },
-    { key: "2027-01", label: "Janvier",   year: 2027 }
-  ];
+  LAST_ANALYSEES = analysees;
+  // Sélecteur d'année : 2026 (à partir de juillet, début de l'outil) jusqu'à l'année suivant l'année en cours
+  const nowYear = new Date().getFullYear();
+  const years = [];
+  for(let y = FIRST_YEAR; y <= Math.max(nowYear + 1, FIRST_YEAR); y++) years.push(y);
+  if(!years.includes(SELECTED_YEAR)) SELECTED_YEAR = nowYear;
+  const year = SELECTED_YEAR;
+  const startMonth = (year === FIRST_YEAR) ? FIRST_MONTH : 1;
+  const monthDefs = [];
+  for(let m = startMonth; m <= 12; m++){
+    monthDefs.push({ key: `${year}-${String(m).padStart(2,"0")}`, label: MONTH_NAMES[m-1], year });
+  }
 
   const commissionByMonth = {};
   monthDefs.forEach(m => commissionByMonth[m.key] = 0);
@@ -276,6 +289,12 @@ async function renderAugSepTable(analysees){
   catch(e){ console.error(e); }
 
   $("augSepTableRoot").innerHTML = `
+    <div class="year-bar">
+      <label for="yearSelect">Année</label>
+      <select id="yearSelect">
+        ${years.map(y=>`<option value="${y}"${y===year?" selected":""}>${y}</option>`).join("")}
+      </select>
+    </div>
     <div class="aug-sep-table">
       <table>
         <thead>
@@ -307,6 +326,12 @@ async function renderAugSepTable(analysees){
         </tbody>
       </table>
     </div>`;
+
+  $("yearSelect").addEventListener("change", (e)=>{
+    SELECTED_YEAR = Number(e.target.value);
+    try{ localStorage.setItem("va_selected_year", String(SELECTED_YEAR)); }catch(_){}
+    renderAugSepTable(LAST_ANALYSEES);
+  });
 
   document.querySelectorAll("[data-conso-key]").forEach(input=>{
     input.addEventListener("change", async (e)=>{
