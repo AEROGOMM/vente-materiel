@@ -224,7 +224,10 @@
       </div>
       <div class="field">
         <label>Adresse</label>
-        <input type="text" id="f_adresse" placeholder="Ex : Chailland (53)">
+        <div style="display:flex;gap:6px;align-items:stretch;">
+          <input type="text" id="f_adresse" placeholder="Ex : Chailland (53)" style="flex:1;min-width:0;">
+          <button type="button" title="Itinéraire depuis Feneu : kilomètres et temps de trajet" style="flex:none;padding:0 12px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--graphite);font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;" onclick="(function(){var a=document.getElementById('f_adresse').value.trim();if(!a){alert('Saisissez d\'abord l\'adresse ou la commune du client.');return;}window.open('https://www.google.com/maps/dir/?api=1&travelmode=driving&origin='+encodeURIComponent('Feneu 49460')+'&destination='+encodeURIComponent(a),'_blank','noopener');})()">🗺️ Carte</button>
+        </div>
       </div>
 
       <div class="section-title">Affaire</div>
@@ -334,6 +337,26 @@
         <button class="btn btn-ghost" id="btnCancel" style="color:var(--ink);border-color:var(--line);">Annuler</button>
         <button class="btn btn-primary" id="btnSave">Enregistrer</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== MODAL ENVOI NOTE À HUGO ===== -->
+<div class="overlay" id="mailNoteOverlay" style="z-index:70;">
+  <div class="modal" style="max-width:520px;">
+    <div class="mhead">
+      <h2>📧 Envoyer la note à Hugo ?</h2>
+      <button class="close-x" type="button" onclick="fermerMailNote()">✕</button>
+    </div>
+    <div class="mbody">
+      <div style="font-size:13px;color:var(--ink-soft);">Une nouvelle note a été enregistrée pour <b id="mn_entreprise"></b>.<br>Destinataire : <b>hugo.girardet@aero-nov.fr</b></div>
+      <div style="font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);font-family:'IBM Plex Mono',monospace;">Nouvelle note</div>
+      <div id="mn_apercu" style="white-space:pre-wrap;font-size:13px;background:var(--concrete-2);border:1px solid var(--line);border-radius:4px;padding:10px;max-height:30vh;overflow-y:auto;"></div>
+    </div>
+    <div class="mfoot" style="flex-wrap:wrap;justify-content:flex-end;">
+      <button type="button" class="btn" style="padding:9px 14px;border:1px solid var(--line);border-radius:4px;background:var(--paper);cursor:pointer;" onclick="fermerMailNote()">Non merci</button>
+      <button type="button" id="mn_btnNouvelle" style="padding:9px 14px;border:1px solid var(--moss);border-radius:4px;background:var(--moss-soft);color:var(--graphite);font-weight:600;cursor:pointer;" onclick="envoyerMailNote(false)">📧 Nouvelle note seule</button>
+      <button type="button" style="padding:9px 14px;border:none;border-radius:4px;background:var(--graphite);color:#fff;font-weight:600;cursor:pointer;" onclick="envoyerMailNote(true)">📧 Ensemble de la note</button>
     </div>
   </div>
 </div>
@@ -634,9 +657,11 @@ async function saveLead(payload, id){
     toast(id ? "Affaire mise à jour" : "Affaire créée");
     await fetchLeads();
     closeLeadModal();
+    return true;
   }catch(err){
     console.error(err);
     toast("Échec de l'enregistrement — voir Paramètres / champs Airtable");
+    return false;
   }finally{
     veil(false);
   }
@@ -672,9 +697,11 @@ async function saveLeadQuiet(id, partialFields){
     const idx = leads.findIndex(x=>x.id===id);
     if(idx>-1) leads[idx] = { id, ...updated.fields };
     render();
+    return true;
   }catch(err){
     console.error(err);
     toast("Échec de la mise à jour — vérifiez les champs Airtable");
+    return false;
   }
 }
 
@@ -974,9 +1001,12 @@ function closeDictate(id){
 async function saveDictation(id){
   stopRecording(id);
   const text = $("dicttext-"+id).value;
-  await saveLeadQuiet(id, { [FIELD.notes]: text });
+  const avant = (leads.find(x=>x.id===id)||{})[FIELD.notes] || "";
+  const ok = await saveLeadQuiet(id, { [FIELD.notes]: text });
+  if(ok === false) return;
   toast("Compte-rendu enregistré sur la fiche");
   closeDictate(id);
+  proposerMailNote(leads.find(x=>x.id===id) || {}, avant, text);
 }
 function toggleExpandTextarea(textareaId, btnEl){
   const ta = $(textareaId);
@@ -1059,8 +1089,53 @@ $("btnSave").addEventListener("click", ()=>{
   if(!airtableReady()){ toast("Configurez Airtable dans les Paramètres ⚙"); return; }
   const payload = readLeadForm();
   if(!payload[FIELD.entreprise] && !payload[FIELD.interlocuteur]){ toast("Renseignez au moins le nom de l'entreprise ou de l'interlocuteur"); return; }
-  saveLead(payload, editingId);
+  const idAvant = editingId;
+  const avant = idAvant ? ((leads.find(x=>x.id===idAvant)||{})[FIELD.notes] || "") : "";
+  saveLead(payload, idAvant).then(ok=>{ if(ok) proposerMailNote(payload, avant, payload[FIELD.notes]); });
 });
+
+// ===== Proposition d'envoi de la nouvelle note à Hugo GIRARDET (AÉRONOV) =====
+const HUGO_EMAIL = "hugo.girardet@aero-nov.fr";
+let mailNoteCtx = null;
+// Repère la partie ajoutée : en tête (date insérée en haut), en fin, ou toute la note si elle a été réécrite
+function partieNouvelleNote(avant, apres){
+  const a = String(avant||"").trim(), b = String(apres||"").trim();
+  if(!a) return b;
+  if(b.endsWith(a)) return b.slice(0, b.length - a.length).trim();
+  if(b.startsWith(a)) return b.slice(a.length).trim();
+  return b;
+}
+function proposerMailNote(fiche, avant, apres){
+  const complet = String(apres||"").trim();
+  if(!complet || complet === String(avant||"").trim()) return;   // pas de nouvelle note
+  const nouvelle = partieNouvelleNote(avant, apres) || complet;
+  mailNoteCtx = { fiche: fiche || {}, nouvelle, complet };
+  $("mn_entreprise").textContent = mailNoteCtx.fiche[FIELD.entreprise] || mailNoteCtx.fiche[FIELD.interlocuteur] || "cette affaire";
+  $("mn_apercu").textContent = nouvelle;
+  // Si la nouvelle note est identique à la note complète, un seul choix suffit
+  $("mn_btnNouvelle").style.display = nouvelle === complet ? "none" : "";
+  $("mailNoteOverlay").classList.add("open");
+}
+function fermerMailNote(){ $("mailNoteOverlay").classList.remove("open"); mailNoteCtx = null; }
+function envoyerMailNote(ensemble){
+  if(!mailNoteCtx) return;
+  const f = mailNoteCtx.fiche;
+  const nom = f[FIELD.entreprise] || f[FIELD.interlocuteur] || "Affaire";
+  const objet = `Vente matériel — ${nom} — ${ensemble ? "note complète" : "nouvelle note"}`;
+  const lignes = ["Bonjour Hugo,", "", ensemble ? "Voici l'ensemble de la note sur cette affaire :" : "Nouvelle note enregistrée sur cette affaire :", ""];
+  const info = (lib, v)=>{ if(v !== undefined && v !== null && String(v).trim() !== "") lignes.push(`${lib} : ${v}`); };
+  info("Entreprise", f[FIELD.entreprise]);
+  info("Interlocuteur", f[FIELD.interlocuteur]);
+  info("Téléphone", f[FIELD.tel]);
+  info("Adresse", f[FIELD.adresse]);
+  info("Matériel", f[FIELD.materiel]);
+  info("Statut", f[FIELD.statut]);
+  info("Commercial", f[FIELD.commercial]);
+  lignes.push("", "— Note —", ensemble ? mailNoteCtx.complet : mailNoteCtx.nouvelle, "", "Cordialement,", f[FIELD.commercial] || "");
+  const url = `mailto:${HUGO_EMAIL}?subject=${encodeURIComponent(objet)}&body=${encodeURIComponent(lignes.join("\n"))}`;
+  fermerMailNote();
+  window.location.href = url;
+}
 $("btnDelete").addEventListener("click", ()=>{ if(editingId) deleteLead(editingId); });
 $("btnClearRelance").addEventListener("click", ()=>{ $("f_relance").value=""; });
 $("btnExpandNotes").addEventListener("click", (e)=> toggleExpandTextarea("f_notes", e.currentTarget));
